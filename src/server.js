@@ -7,6 +7,7 @@ import connectDB from './config/db.js';
 import userRoutes from './routes/user.routes.js';
 import productRoutes from './routes/product.routes.js';
 import cartRoutes from './routes/cart.routes.js';
+import orderRoutes from './routes/order.routes.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Not found' });
