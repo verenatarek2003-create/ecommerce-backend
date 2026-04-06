@@ -4,7 +4,11 @@ export const JWT_SECRET = process.env.JWT_SECRET || 'change_me_in_env';
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1h';
 
 export const signToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  const normalized = { ...payload };
+  if (normalized.id != null) {
+    normalized.id = String(normalized.id);
+  }
+  return jwt.sign(normalized, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 export const verifyToken = (token) => {

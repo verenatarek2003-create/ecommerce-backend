@@ -1,5 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../middleware/async-handler.middleware.js';
 import {
   getCart,
   addItem,
@@ -11,10 +12,10 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
-router.get('/', getCart);
-router.post('/items', addItem);
-router.patch('/items/:productId', updateItemQuantity);
-router.delete('/items/:productId', removeItem);
+router.get('/', asyncHandler(getCart));
+router.post('/items', asyncHandler(addItem));
+router.patch('/items/:productId', asyncHandler(updateItemQuantity));
+router.delete('/items/:productId', asyncHandler(removeItem));
 
 export default router;
 

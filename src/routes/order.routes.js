@@ -1,5 +1,6 @@
 import express from 'express';
 import { authMiddleware, requireRole } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../middleware/async-handler.middleware.js';
 import { USER_ROLES } from '../enums/user-role.enum.js';
 import {
   createOrder,
@@ -10,14 +11,14 @@ import {
 
 const router = express.Router();
 
-router.post('/', authMiddleware, createOrder);
-router.get('/', authMiddleware, listMyOrders);
-router.get('/:id', authMiddleware, getOrderById);
+router.post('/', authMiddleware, asyncHandler(createOrder));
+router.get('/', authMiddleware, asyncHandler(listMyOrders));
+router.get('/:id', authMiddleware, asyncHandler(getOrderById));
 router.patch(
   '/:id/status',
   authMiddleware,
   requireRole(USER_ROLES.ADMIN),
-  updateOrderStatus
+  asyncHandler(updateOrderStatus)
 );
 
 export default router;

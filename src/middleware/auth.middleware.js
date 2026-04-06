@@ -1,16 +1,12 @@
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/jwt.js";
+import { AppError } from "../utils/app-error.js";
 
 export const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res
-      .status(401)
-      .json({
-        success: false,
-        message: "Authorization header missing or malformed",
-      });
+    return next(new AppError("Authorization header missing or malformed", 401));
   }
 
   const token = authHeader.split(" ")[1];
@@ -18,26 +14,19 @@ export const authMiddleware = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = {
-      id: decoded.id,
+      id: decoded.id != null ? String(decoded.id) : decoded.id,
       role: decoded.role,
     };
     next();
   } catch (err) {
-    return res
-      .status(401)
-      .json({ success: false, message: "Invalid or expired token" });
+    return next(new AppError("Invalid or expired token", 401));
   }
 };
 
 export const requireRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Forbidden: insufficient permissions",
-        });
+      return next(new AppError("Forbidden: insufficient permissions", 403));
     }
     next();
   };

@@ -8,6 +8,8 @@ import userRoutes from './routes/user.routes.js';
 import productRoutes from './routes/product.routes.js';
 import cartRoutes from './routes/cart.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import { responseMiddleware } from './middleware/response.middleware.js';
+import { notFoundMiddleware, errorMiddleware } from './middleware/error.middleware.js';
 
 dotenv.config();
 
@@ -17,9 +19,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+app.use(responseMiddleware);
 
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'API is running' });
+  return res.success(null, 'API is running');
 });
 
 app.use('/api/users', userRoutes);
@@ -27,18 +30,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Not found' });
-});
-
-app.use((err, req, res, next) => {
-  console.error(err);
-  const status = err.statusCode || 500;
-  res.status(status).json({
-    success: false,
-    message: err.message || 'Internal server error'
-  });
-});
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 

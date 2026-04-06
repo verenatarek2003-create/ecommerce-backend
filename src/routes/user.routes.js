@@ -1,5 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { asyncHandler } from '../middleware/async-handler.middleware.js';
 import {
   register,
   login,
@@ -10,12 +11,12 @@ import {
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', asyncHandler(register));
+router.post('/login', asyncHandler(login));
 
-router.get('/me', authMiddleware, getProfile);
-router.patch('/me', authMiddleware, updateProfile);
-router.patch('/me/password', authMiddleware, changePassword);
+router.get('/me', authMiddleware, asyncHandler(getProfile));
+router.patch('/me', authMiddleware, asyncHandler(updateProfile));
+router.patch('/me/password', authMiddleware, asyncHandler(changePassword));
 
 export default router;
 
