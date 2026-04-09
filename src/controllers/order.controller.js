@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import { itemsProductWithCategory } from '../config/populate.js';
 import { ORDER_STATUS, ORDER_STATUS_VALUES } from '../enums/order-status.enum.js';
 import { USER_ROLES } from '../enums/user-role.enum.js';
 import Cart from '../models/cart.model.js';
@@ -39,7 +40,7 @@ export const createOrder = async (req, res, next) => {
     return next(new AppError(addr.error, 400));
   }
 
-  const cart = await Cart.findOne({ user: req.user.id }).populate('items.product');
+  const cart = await Cart.findOne({ user: req.user.id }).populate(itemsProductWithCategory);
   if (!cart || !cart.items.length) {
     return next(new AppError('Cart is empty', 400));
   }
@@ -106,7 +107,7 @@ export const createOrder = async (req, res, next) => {
 
     cart.items = [];
     await cart.save();
-    await order.populate('items.product');
+    await order.populate(itemsProductWithCategory);
 
     return res.success(order, 'Order created successfully', 201);
   } catch (err) {
@@ -120,7 +121,7 @@ export const createOrder = async (req, res, next) => {
 export const listMyOrders = async (req, res) => {
   const orders = await Order.find({ user: req.user.id })
     .sort({ createdAt: -1 })
-    .populate('items.product');
+    .populate(itemsProductWithCategory);
 
   return res.success(orders);
 };
@@ -132,7 +133,7 @@ export const getOrderById = async (req, res, next) => {
     return next(new AppError('Invalid order id', 400));
   }
 
-  const order = await Order.findById(id).populate('items.product');
+  const order = await Order.findById(id).populate(itemsProductWithCategory);
   if (!order) {
     return next(new AppError('Order not found', 404));
   }
@@ -162,7 +163,7 @@ export const updateOrderStatus = async (req, res, next) => {
     id,
     { $set: { status } },
     { new: true, runValidators: true }
-  ).populate('items.product');
+  ).populate(itemsProductWithCategory);
 
   if (!order) {
     return next(new AppError('Order not found', 404));

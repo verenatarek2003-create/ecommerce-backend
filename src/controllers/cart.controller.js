@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
+import { itemsProductWithCategory } from '../config/populate.js';
 import Cart from '../models/cart.model.js';
 import Product from '../models/product.model.js';
 import { AppError } from '../utils/app-error.js';
 
 const ensureCart = async (userId) => {
-  let cart = await Cart.findOne({ user: userId }).populate('items.product');
+  let cart = await Cart.findOne({ user: userId }).populate(itemsProductWithCategory);
   if (!cart) {
     cart = await Cart.create({ user: userId, items: [] });
-    cart = await cart.populate('items.product');
+    cart = await cart.populate(itemsProductWithCategory);
   }
   return cart;
 };
@@ -69,7 +70,7 @@ export const addItem = async (req, res, next) => {
   }
 
   await cart.save();
-  await cart.populate('items.product');
+  await cart.populate(itemsProductWithCategory);
   return res.success(buildCartResponse(cart), 'Item added to cart', 201);
 };
 
@@ -108,7 +109,7 @@ export const updateItemQuantity = async (req, res, next) => {
   item.quantity = quantity;
   item.priceSnapshot = product.price;
   await cart.save();
-  await cart.populate('items.product');
+  await cart.populate(itemsProductWithCategory);
   return res.success(buildCartResponse(cart), 'Cart item updated');
 };
 
@@ -128,7 +129,7 @@ export const removeItem = async (req, res, next) => {
   }
 
   await cart.save();
-  await cart.populate('items.product');
+  await cart.populate(itemsProductWithCategory);
   return res.success(buildCartResponse(cart), 'Item removed from cart');
 };
 
