@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -13,8 +13,6 @@ import orderRoutes from './routes/order.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import { responseMiddleware } from './middleware/response.middleware.js';
 import { notFoundMiddleware, errorMiddleware } from './middleware/error.middleware.js';
-
-dotenv.config();
 
 const app = express();
 

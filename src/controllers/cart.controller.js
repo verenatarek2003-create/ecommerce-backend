@@ -4,6 +4,16 @@ import Cart from '../models/cart.model.js';
 import Product from '../models/product.model.js';
 import { AppError } from '../utils/app-error.js';
 
+/** Works when `items.product` is an ObjectId or a populated Product doc. */
+const cartLineProductId = (itemProduct) => {
+  if (itemProduct == null) return '';
+  if (itemProduct instanceof mongoose.Types.ObjectId) return itemProduct.toString();
+  if (typeof itemProduct === 'object' && itemProduct._id != null) {
+    return itemProduct._id.toString();
+  }
+  return String(itemProduct);
+};
+
 const ensureCart = async (userId) => {
   let cart = await Cart.findOne({ user: userId }).populate(itemsProductWithCategory);
   if (!cart) {
@@ -51,7 +61,8 @@ export const addItem = async (req, res, next) => {
   }
 
   const cart = await ensureCart(req.user.id);
-  const existing = cart.items.find((item) => item.product.toString() === product._id.toString());
+  const pid = product._id.toString();
+  const existing = cart.items.find((item) => cartLineProductId(item.product) === pid);
   const newQuantity = existing ? existing.quantity + quantity : quantity;
 
   if (newQuantity > product.stock) {
@@ -100,7 +111,8 @@ export const updateItemQuantity = async (req, res, next) => {
   }
 
   const cart = await ensureCart(req.user.id);
-  const item = cart.items.find((i) => i.product.toString() === product._id.toString());
+  const pid = product._id.toString();
+  const item = cart.items.find((i) => cartLineProductId(i.product) === pid);
 
   if (!item) {
     return next(new AppError('Item not in cart', 404));
@@ -122,7 +134,7 @@ export const removeItem = async (req, res, next) => {
 
   const cart = await ensureCart(req.user.id);
   const initialLength = cart.items.length;
-  cart.items = cart.items.filter((item) => item.product.toString() !== productId);
+  cart.items = cart.items.filter((item) => cartLineProductId(item.product) !== productId);
 
   if (cart.items.length === initialLength) {
     return next(new AppError('Item not in cart', 404));
