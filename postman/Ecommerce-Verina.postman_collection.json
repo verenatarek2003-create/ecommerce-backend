@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "Ecommerce Verina API",
-    "description": "Ecommerce Verina API (Express + MongoDB + Cloudinary).\n\nVariables: baseUrl (http://localhost:5000/api), token (set by Login/Register tests), categoryId, productId, orderId.\n\nFlow: Register (admin) → Create category → optional Upload requests or multipart create → Register/Login as seller → Create product (needs categoryId) → Cart → Orders.\n\nCloudinary: set CLOUDINARY_* and UPLOADS_FOLDER in server .env. Upload field names: category image = image, product files = images.",
+    "description": "Ecommerce Verina API (Express + MongoDB + Cloudinary).\n\nVariables: baseUrl (http://localhost:5000/api), token (set by Login/Register tests), categoryId, productId, orderId.\n\nFlow: Register (admin) → Create category → optional Upload requests or multipart create → Register/Login as seller → Create product (needs categoryId) → Wishlist / Cart → Orders. Wishlist: GET/POST/DELETE /api/wishlist (auth).\n\nCloudinary: set CLOUDINARY_* and UPLOADS_FOLDER in server .env. Upload field names: category image = image, product files = images.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -538,6 +538,51 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/cart/items/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wishlist",
+      "item": [
+        {
+          "name": "Get wishlist",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/wishlist"
+          }
+        },
+        {
+          "name": "Add product to wishlist",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/wishlist/items"
+          }
+        },
+        {
+          "name": "Remove product from wishlist",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/wishlist/items/{{productId}}"
           }
         }
       ]
