@@ -3,7 +3,7 @@ import Category from '../models/category.model.js';
 import Product from '../models/product.model.js';
 import { AppError } from '../utils/app-error.js';
 import { uploadImageBuffer } from '../utils/cloudinary-upload.js';
-import { parsePagination } from '../utils/validators.js';
+import { normalizeNonNegativeIntStock, parsePagination } from '../utils/validators.js';
 
 const normalizeImagesFromBody = (body) => {
   if (body.images === undefined || body.images === null) {
@@ -39,6 +39,16 @@ export const createProduct = async (req, res, next) => {
     return next(new AppError('Category not found', 404));
   }
 
+  const priceNum = Number(price);
+  if (Number.isNaN(priceNum) || priceNum < 0) {
+    return next(new AppError('Price must be a valid non-negative number', 400));
+  }
+
+  const stockParsed = normalizeNonNegativeIntStock(stock, 'Stock');
+  if (stockParsed.error) {
+    return next(new AppError(stockParsed.error, 400));
+  }
+
   const images = normalizeImagesFromBody(req.body);
   if (req.files?.length) {
     for (const file of req.files) {
@@ -50,10 +60,10 @@ export const createProduct = async (req, res, next) => {
   const product = await Product.create({
     name,
     description,
-    price: Number(price),
+    price: priceNum,
     category: categoryId,
     images,
-    stock: Number(stock),
+    stock: stockParsed.value,
     seller: req.user?.id
   });
 
@@ -62,11 +72,17 @@ export const createProduct = async (req, res, next) => {
 };
 
 export const listProducts = async (req, res, next) => {
-  const { search, category, minPrice, maxPrice } = req.query;
+  const { search, category, minPrice, maxPrice, inStock } = req.query;
   const { page, limit, skip } = parsePagination(req.query);
   const filter = {};
 
   if (search) filter.name = { $regex: search, $options: 'i' };
+
+  const onlyInStock =
+    inStock === true || inStock === 'true' || inStock === '1' || inStock === 1;
+  if (onlyInStock) {
+    filter.stock = { $gt: 0 };
+  }
   if (category) {
     if (!mongoose.isValidObjectId(category)) {
       return next(new AppError('Invalid category filter id', 400));
@@ -119,10 +135,26 @@ export const updateProduct = async (req, res, next) => {
   }
 
   const updates = {};
-  const allowed = ['name', 'description', 'price', 'images', 'stock'];
+  const allowed = ['name', 'description'];
   allowed.forEach((field) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
   });
+
+  if (req.body.price !== undefined) {
+    const priceNum = Number(req.body.price);
+    if (Number.isNaN(priceNum) || priceNum < 0) {
+      return next(new AppError('Price must be a valid non-negative number', 400));
+    }
+    updates.price = priceNum;
+  }
+
+  if (req.body.stock !== undefined) {
+    const stockParsed = normalizeNonNegativeIntStock(req.body.stock, 'Stock');
+    if (stockParsed.error) {
+      return next(new AppError(stockParsed.error, 400));
+    }
+    updates.stock = stockParsed.value;
+  }
 
   if (req.body.categoryId !== undefined) {
     if (!mongoose.isValidObjectId(req.body.categoryId)) {

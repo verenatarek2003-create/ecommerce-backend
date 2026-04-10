@@ -353,6 +353,14 @@
           }
         },
         {
+          "name": "List products (in stock only)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products?page=1&limit=10&inStock=true"
+          }
+        },
+        {
           "name": "Get product by id",
           "request": {
             "method": "GET",
