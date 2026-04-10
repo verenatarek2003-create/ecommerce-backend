@@ -159,15 +159,20 @@ export const updateOrderStatus = async (req, res, next) => {
     return next(new AppError('Valid status is required', 400));
   }
 
-  const order = await Order.findByIdAndUpdate(
-    id,
-    { $set: { status } },
-    { new: true, runValidators: true }
-  ).populate(itemsProductWithCategory);
-
+  const order = await Order.findById(id);
   if (!order) {
     return next(new AppError('Order not found', 404));
   }
+
+  if (status === ORDER_STATUS.CANCELLED && order.status !== ORDER_STATUS.CANCELLED) {
+    for (const item of order.items) {
+      await Product.updateOne({ _id: item.product }, { $inc: { stock: item.quantity } });
+    }
+  }
+
+  order.status = status;
+  await order.save();
+  await order.populate(itemsProductWithCategory);
 
   return res.success(order, 'Order status updated');
 };

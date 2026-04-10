@@ -1,9 +1,12 @@
 import { Readable } from 'stream';
-import cloudinary, { getCloudinaryUploadRoot, isCloudinaryConfigured } from '../config/cloudinary.js';
+import cloudinary, {
+  ensureCloudinaryConfigured,
+  getCloudinaryUploadRoot
+} from '../config/cloudinary.js';
 import { AppError } from './app-error.js';
 
 export const uploadImageBuffer = (buffer, subfolder) => {
-  if (!isCloudinaryConfigured()) {
+  if (!ensureCloudinaryConfigured()) {
     return Promise.reject(new AppError('Cloudinary is not configured', 500));
   }
 

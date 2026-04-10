@@ -13,3 +13,14 @@ export const parsePagination = (query) => {
   return { page, limit, skip };
 };
 
+export const normalizeNonNegativeIntStock = (value, label = 'Stock') => {
+  const n = Number(value);
+  if (value === '' || value === null || value === undefined || Number.isNaN(n)) {
+    return { error: `${label} must be a number` };
+  }
+  if (!Number.isInteger(n) || n < 0) {
+    return { error: `${label} must be a non-negative integer` };
+  }
+  return { value: n };
+};
+
