@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "Ecommerce Verina API",
-    "description": "Express + MongoDB ecommerce backend. Set collection variables: baseUrl (e.g. http://localhost:5000/api), token (paste JWT after login/register).",
+    "description": "Ecommerce Verina API (Express + MongoDB + Cloudinary).\n\nVariables: baseUrl (http://localhost:5000/api), token (set by Login/Register tests), categoryId, productId, orderId.\n\nFlow: Register (admin) → Create category → optional Upload requests or multipart create → Register/Login as seller → Create product (needs categoryId) → Cart → Orders.\n\nCloudinary: set CLOUDINARY_* and UPLOADS_FOLDER in server .env. Upload field names: category image = image, product files = images.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -68,7 +68,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products\"\n}"
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"description\": \"Electronic products\",\n  \"image\": \"https://example.com/category-banner.jpg\"\n}"
             },
             "url": "{{baseUrl}}/categories"
           }
@@ -84,9 +84,70 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics & gadgets\",\n  \"description\": \"Updated description\"\n}"
+              "raw": "{\n  \"name\": \"Electronics & gadgets\",\n  \"description\": \"Updated description\",\n  \"image\": \"https://example.com/new-banner.jpg\"\n}"
             },
             "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Update category (multipart + replace image)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Electronics (new image)", "type": "text" },
+                {
+                  "key": "image",
+                  "description": "Optional single file replaces category image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/categories/{{categoryId}}"
+          }
+        },
+        {
+          "name": "Create category (multipart + image file)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) { pm.collectionVariables.set('categoryId', json.data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Books", "type": "text" },
+                { "key": "description", "value": "Books category", "type": "text" },
+                {
+                  "key": "image",
+                  "description": "JPEG/PNG/GIF/WebP, max 5MB",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/categories"
           }
         },
         {
@@ -104,8 +165,88 @@
       ]
     },
     {
+      "name": "Upload (Cloudinary)",
+      "item": [
+        {
+          "name": "Upload category image (admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "description": "Single file, field name: image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/upload/category-image"
+          }
+        },
+        {
+          "name": "Upload product images (seller/admin)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "description": "Add multiple rows with key images for several files",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/upload/product-images"
+          }
+        }
+      ]
+    },
+    {
       "name": "Users",
       "item": [
+        {
+          "name": "Register (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) { pm.collectionVariables.set('token', json.data.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"admin\"\n}"
+            },
+            "url": "{{baseUrl}}/users/register"
+          }
+        },
         {
           "name": "Register",
           "event": [
@@ -248,6 +389,46 @@
           }
         },
         {
+          "name": "Create product (multipart + image files)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) { pm.collectionVariables.set('productId', json.data._id); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Multipart Product", "type": "text" },
+                { "key": "description", "value": "Uploaded images", "type": "text" },
+                { "key": "price", "value": "19.99", "type": "text" },
+                { "key": "stock", "value": "25", "type": "text" },
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                {
+                  "key": "images",
+                  "description": "Same key images for each file (max 10)",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/products"
+          }
+        },
+        {
           "name": "Update product (seller/admin)",
           "request": {
             "auth": {
@@ -258,7 +439,30 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated Product Name\",\n  \"price\": 24.99,\n  \"stock\": 50\n}"
+              "raw": "{\n  \"name\": \"Updated Product Name\",\n  \"price\": 24.99,\n  \"stock\": 50,\n  \"categoryId\": \"{{categoryId}}\"\n}"
+            },
+            "url": "{{baseUrl}}/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Update product (append images via multipart)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "description": "Appends to existing product images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": "{{baseUrl}}/products/{{productId}}"
           }

@@ -2,10 +2,29 @@ import mongoose from 'mongoose';
 import Category from '../models/category.model.js';
 import Product from '../models/product.model.js';
 import { AppError } from '../utils/app-error.js';
+import { uploadImageBuffer } from '../utils/cloudinary-upload.js';
 import { parsePagination } from '../utils/validators.js';
 
+const normalizeImagesFromBody = (body) => {
+  if (body.images === undefined || body.images === null) {
+    return [];
+  }
+  if (Array.isArray(body.images)) {
+    return body.images.filter(Boolean);
+  }
+  if (typeof body.images === 'string') {
+    try {
+      const parsed = JSON.parse(body.images);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : body.images ? [body.images] : [];
+    } catch {
+      return body.images ? [body.images] : [];
+    }
+  }
+  return [];
+};
+
 export const createProduct = async (req, res, next) => {
-  const { name, description, price, categoryId, images, stock } = req.body;
+  const { name, description, price, categoryId, stock } = req.body;
 
   if (!name || price == null || stock == null) {
     return next(new AppError('Name, price, and stock are required', 400));
@@ -20,13 +39,21 @@ export const createProduct = async (req, res, next) => {
     return next(new AppError('Category not found', 404));
   }
 
+  const images = normalizeImagesFromBody(req.body);
+  if (req.files?.length) {
+    for (const file of req.files) {
+      const { url } = await uploadImageBuffer(file.buffer, 'products');
+      images.push(url);
+    }
+  }
+
   const product = await Product.create({
     name,
     description,
-    price,
+    price: Number(price),
     category: categoryId,
     images,
-    stock,
+    stock: Number(stock),
     seller: req.user?.id
   });
 
@@ -106,6 +133,22 @@ export const updateProduct = async (req, res, next) => {
       return next(new AppError('Category not found', 404));
     }
     updates.category = req.body.categoryId;
+  }
+
+  if (req.files?.length) {
+    const uploaded = [];
+    for (const file of req.files) {
+      const { url } = await uploadImageBuffer(file.buffer, 'products');
+      uploaded.push(url);
+    }
+    if (req.body.images !== undefined) {
+      updates.images = [...normalizeImagesFromBody(req.body), ...uploaded];
+    } else {
+      const existing = await Product.findById(id).select('images');
+      updates.images = [...(existing?.images || []), ...uploaded];
+    }
+  } else if (req.body.images !== undefined) {
+    updates.images = normalizeImagesFromBody(req.body);
   }
 
   const product = await Product.findByIdAndUpdate(

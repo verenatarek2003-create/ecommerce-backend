@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Category from '../models/category.model.js';
 import Product from '../models/product.model.js';
 import { AppError } from '../utils/app-error.js';
+import { uploadImageBuffer } from '../utils/cloudinary-upload.js';
 import { parsePagination } from '../utils/validators.js';
 
 export const listCategories = async (req, res) => {
@@ -41,7 +42,13 @@ export const createCategory = async (req, res, next) => {
     return next(new AppError('Name is required', 400));
   }
 
-  const category = await Category.create({ name, slug, description });
+  let image = req.body.image;
+  if (req.file) {
+    const { url } = await uploadImageBuffer(req.file.buffer, 'categories');
+    image = url;
+  }
+
+  const category = await Category.create({ name, slug, description, image });
   return res.success(category, 'Category created successfully', 201);
 };
 
@@ -55,6 +62,12 @@ export const updateCategory = async (req, res, next) => {
   if (req.body.name !== undefined) updates.name = req.body.name;
   if (req.body.slug !== undefined) updates.slug = req.body.slug;
   if (req.body.description !== undefined) updates.description = req.body.description;
+  if (req.body.image !== undefined) updates.image = req.body.image;
+
+  if (req.file) {
+    const { url } = await uploadImageBuffer(req.file.buffer, 'categories');
+    updates.image = url;
+  }
 
   const category = await Category.findByIdAndUpdate(
     id,
